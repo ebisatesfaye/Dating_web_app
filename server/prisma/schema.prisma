@@ -1,0 +1,150 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  GUEST
+  MEMBER
+  ADMIN
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum PaymentStatus {
+  FREE
+  PENDING
+  PAID
+}
+
+enum RelationshipPreference {
+  RELATIONSHIP
+  DATING
+  FWB
+  CASUAL
+}
+
+enum PaymentMethod {
+  TELEBIRR
+  CBE_BIRR
+}
+
+enum PaymentStatusValue {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  RESOLVED
+}
+
+model User {
+  id             String        @id @default(uuid())
+  email          String        @unique
+  phone          String        @unique
+  passwordHash   String
+  gender         Gender
+  role           Role          @default(MEMBER)
+  isVerified     Boolean       @default(false)
+  paymentStatus  PaymentStatus @default(PENDING)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  
+  profile        Profile?
+  payments       Payment[]
+  
+  // Connections where this user is the viewer
+  connectionsMade Connection[] @relation("ViewerConnections")
+  // Connections where this user is the viewed profile
+  connectionsRecv Connection[] @relation("ViewedConnections")
+  
+  // Reports made by this user
+  reportsMade    Report[]      @relation("ReporterRelation")
+  // Reports targeting this user
+  reportsRecv    Report[]      @relation("ReportedUserRelation")
+  
+  adminLogs      AdminLog[]
+}
+
+model Profile {
+  id                     String                 @id @default(uuid())
+  userId                 String                 @unique
+  user                   User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName               String
+  dateOfBirth            DateTime
+  location               String
+  city                   String?
+  bio                    String?
+  profilePhotoUrl        String?
+  relationshipPreference RelationshipPreference
+  instagramUsername      String?
+  telegramUsername       String?
+  isPrivateInfoVisible   Boolean                @default(false)
+  isActive               Boolean                @default(false) // Needs admin approval by default
+  createdAt              DateTime               @default(now())
+}
+
+model Payment {
+  id            String             @id @default(uuid())
+  userId        String
+  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount        Decimal            @db.Decimal(10, 2)
+  currency      String             @default("ETB")
+  paymentMethod PaymentMethod
+  transactionId String             @unique
+  status        PaymentStatusValue @default(PENDING)
+  verifiedAt    DateTime?
+  createdAt     DateTime           @default(now())
+}
+
+model Connection {
+  id           String   @id @default(uuid())
+  viewerId     String
+  viewer       User     @relation("ViewerConnections", fields: [viewerId], references: [id], onDelete: Cascade)
+  viewedUserId String
+  viewedUser   User     @relation("ViewedConnections", fields: [viewedUserId], references: [id], onDelete: Cascade)
+  viewedAt     DateTime @default(now())
+
+  @@unique([viewerId, viewedUserId])
+}
+
+model Report {
+  id             String       @id @default(uuid())
+  reporterId     String
+  reporter       User         @relation("ReporterRelation", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedUserId String
+  reportedUser   User         @relation("ReportedUserRelation", fields: [reportedUserId], references: [id], onDelete: Cascade)
+  reason         String
+  status         ReportStatus @default(PENDING)
+  createdAt      DateTime     @default(now())
+}
+
+model AdminLog {
+  id         String   @id @default(uuid())
+  adminId    String
+  admin      User     @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  action     String
+  entityType String?
+  entityId   String?
+  details    String?  // JSON represented as string
+  createdAt  DateTime @default(now())
+}
+
+// Key-value store for app-level settings (e.g. membership fee)
+model Settings {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+

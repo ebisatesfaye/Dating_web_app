@@ -1,0 +1,98 @@
+@import "tailwindcss";
+
+/* ── Design Tokens ─────────────────────────────────────────────── */
+@theme {
+  --color-primary:      #FF1493;
+  --color-secondary:    #9333EA;
+  --color-accent-blue:  #06B6D4;
+  --color-dark-surface: #161616;
+  --color-dark-bg:      #0A0A0A;
+  --color-dark-card:    #1f1f1f;
+
+  --animate-fade-in:    fadeIn 0.45s ease-out both;
+  --animate-slide-up:   slideUp 0.5s ease-out both;
+  --animate-pulse-slow: pulse 3s cubic-bezier(0.4,0,0.6,1) infinite;
+}
+
+/* ── Keyframes ─────────────────────────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Base ──────────────────────────────────────────────────────── */
+:root {
+  --background: #0A0A0A;
+  --foreground: #FFFFFF;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  overflow-x: hidden;
+}
+
+/* ── Tailwind v4 custom utility classes ───────────────────────── */
+@utility animate-fade-in {
+  animation: var(--animate-fade-in);
+}
+
+@utility animate-slide-up {
+  animation: var(--animate-slide-up);
+}
+
+/* ── Glassmorphism helpers ─────────────────────────────────────── */
+@utility glass-panel {
+  background: rgba(22, 22, 22, 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 20, 147, 0.14);
+}
+
+@utility glass-panel-blue {
+  background: rgba(22, 22, 22, 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(6, 182, 212, 0.14);
+}
+
+@utility glow-pink {
+  box-shadow: 0 0 22px rgba(255, 20, 147, 0.38);
+}
+
+@utility glow-blue {
+  box-shadow: 0 0 22px rgba(6, 182, 212, 0.38);
+}
+
+/* ── Custom Scrollbar ──────────────────────────────────────────── */
+::-webkit-scrollbar       { width: 5px; }
+::-webkit-scrollbar-track { background: #0A0A0A; }
+::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #FF1493; }
+
+/* ── Selection ─────────────────────────────────────────────────── */
+::selection {
+  background: rgba(255, 20, 147, 0.3);
+  color: #fff;
+}
+
+/* ── Scrollbar hide utility ───────────────────────────────────── */
+@utility scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+@utility scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Ensure white sections override dark body text ────────────── */
+.bg-white, section.bg-white {
+  color: #111827;
+}
+
