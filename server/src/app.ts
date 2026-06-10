@@ -25,8 +25,23 @@ import {
 
 const app = express();
 
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://192.168.1.9:3000',
+];
+
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://192.168.1.9:3000'],
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    const isAllowed = allowedOrigins.includes(origin) ||
+                      (process.env.CLIENT_URL && (process.env.CLIENT_URL === '*' || origin === process.env.CLIENT_URL || origin.endsWith('.vercel.app')));
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      callback(null, true);
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -60,7 +75,8 @@ const upload = multer({
 // Upload endpoint — returns the public URL
 app.post('/api/upload/photo', authenticateToken, upload.single('photo'), (req: any, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-  const url = `http://localhost:5000/uploads/profiles/${req.file.filename}`;
+  const host = process.env.BACKEND_URL || `${req.protocol}://${req.get('host')}`;
+  const url = `${host}/uploads/profiles/${req.file.filename}`;
   res.json({ url });
 });
 
