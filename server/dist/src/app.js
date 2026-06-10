@@ -8,23 +8,32 @@ const cors_1 = __importDefault(require("cors"));
 const path_1 = __importDefault(require("path"));
 const multer_1 = __importDefault(require("multer"));
 const fs_1 = __importDefault(require("fs"));
+const cloudinary_1 = require("cloudinary");
 const auth_1 = require("./middleware/auth");
 const auth_2 = require("./controllers/auth");
 const profile_1 = require("./controllers/profile");
 const payment_1 = require("./controllers/payment");
 const admin_1 = require("./controllers/admin");
 const app = (0, express_1.default)();
+cloudinary_1.v2.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dmafjwawt',
+    api_key: process.env.CLOUDINARY_API_KEY || '111535793578121',
+    api_secret: process.env.CLOUDINARY_API_SECRET || 'lNw6Ykg77Ym8VNtUooj085uYbzo',
+});
 const allowedOrigins = [
     'http://localhost:3000',
     'http://localhost:3001',
     'http://192.168.1.9:3000',
+    ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []),
+    ...(process.env.CLIENT_URL ? [process.env.CLIENT_URL] : []),
 ];
 app.use((0, cors_1.default)({
     origin: (origin, callback) => {
         if (!origin)
             return callback(null, true);
         const isAllowed = allowedOrigins.includes(origin) ||
-            (process.env.CLIENT_URL && (process.env.CLIENT_URL === '*' || origin === process.env.CLIENT_URL || origin.endsWith('.vercel.app')));
+            (process.env.CLIENT_URL && (process.env.CLIENT_URL === '*' || origin === process.env.CLIENT_URL || origin.endsWith('.vercel.app'))) ||
+            (process.env.FRONTEND_URL && (process.env.FRONTEND_URL === '*' || origin === process.env.FRONTEND_URL || origin.endsWith('.vercel.app')));
         if (isAllowed) {
             callback(null, true);
         }
@@ -38,22 +47,14 @@ app.use((0, cors_1.default)({
 }));
 app.options('*', (0, cors_1.default)());
 app.use(express_1.default.json());
-// Serve uploaded profile photos as static files
+// Serve uploaded profile photos as static files (legacy/fallback)
 const uploadsDir = path_1.default.join(__dirname, '../../uploads/profiles');
 if (!fs_1.default.existsSync(uploadsDir))
     fs_1.default.mkdirSync(uploadsDir, { recursive: true });
 app.use('/uploads', express_1.default.static(path_1.default.join(__dirname, '../../uploads')));
-// Multer config — store to disk, allow images only
-const storage = multer_1.default.diskStorage({
-    destination: (_req, _file, cb) => cb(null, uploadsDir),
-    filename: (_req, file, cb) => {
-        const ext = path_1.default.extname(file.originalname).toLowerCase() || '.jpg';
-        const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
-        cb(null, unique);
-    },
-});
+// Multer config — store in memory, allow images only
 const upload = (0, multer_1.default)({
-    storage,
+    storage: multer_1.default.memoryStorage(),
     limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
     fileFilter: (_req, file, cb) => {
         if (/^image\//i.test(file.mimetype))
@@ -62,13 +63,20 @@ const upload = (0, multer_1.default)({
             cb(new Error('Only image files are allowed'));
     },
 });
-// Upload endpoint — returns the public URL
+// Upload endpoint — uploads to Cloudinary and returns the public secure URL
 app.post('/api/upload/photo', auth_1.authenticateToken, upload.single('photo'), (req, res) => {
     if (!req.file)
         return res.status(400).json({ error: 'No file uploaded' });
-    const host = process.env.BACKEND_URL || `${req.protocol}://${req.get('host')}`;
-    const url = `${host}/uploads/profiles/${req.file.filename}`;
-    res.json({ url });
+    cloudinary_1.v2.uploader.upload_stream({
+        folder: 'whaatachi_profiles',
+        upload_preset: process.env.CLOUDINARY_UPLOAD_PRESET || 'qr_menu_uploads',
+    }, (error, result) => {
+        if (error) {
+            console.error('Cloudinary upload error:', error);
+            return res.status(500).json({ error: 'Failed to upload image to Cloudinary' });
+        }
+        res.json({ url: result?.secure_url });
+    }).end(req.file.buffer);
 });
 // Auth Routes
 app.post('/api/auth/register', auth_2.register);
