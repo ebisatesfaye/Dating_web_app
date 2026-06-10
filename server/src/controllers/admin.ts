@@ -196,3 +196,90 @@ export const resolveReport = async (req: AuthRequest, res: Response) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+export const getUsers = async (req: AuthRequest, res: Response) => {
+  try {
+    const users = await prisma.user.findMany({
+      include: {
+        profile: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json(users);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const getPayments = async (req: AuthRequest, res: Response) => {
+  try {
+    const payments = await prisma.payment.findMany({
+      include: {
+        user: {
+          select: {
+            email: true,
+            phone: true,
+            gender: true,
+            profile: {
+              select: { fullName: true }
+            }
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json(payments);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const verifyPaymentAdmin = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body; // 'COMPLETED' or 'FAILED'
+
+    const payment = await prisma.payment.findUnique({ where: { id } });
+    if (!payment) return res.status(404).json({ error: 'Payment not found' });
+
+    const updatedPayment = await prisma.payment.update({
+      where: { id },
+      data: {
+        status,
+        verifiedAt: status === 'COMPLETED' ? new Date() : null,
+      },
+    });
+
+    if (status === 'COMPLETED') {
+      await prisma.user.update({
+        where: { id: payment.userId },
+        data: {
+          paymentStatus: 'PAID',
+          isVerified: true,
+        },
+      });
+    } else {
+      await prisma.user.update({
+        where: { id: payment.userId },
+        data: {
+          paymentStatus: 'PENDING',
+        },
+      });
+    }
+
+    await prisma.adminLog.create({
+      data: {
+        adminId: req.user!.id,
+        action: `VERIFY_PAYMENT_${status}`,
+        entityType: 'PAYMENT',
+        entityId: id,
+        details: `Payment status updated to ${status}`
+      },
+    });
+
+    res.json({ message: `Payment verified as ${status}`, payment: updatedPayment });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};
+

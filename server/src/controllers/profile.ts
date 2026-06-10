@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import { PrismaClient, Gender, PaymentStatus } from '@prisma/client';
+import { PrismaClient, Gender } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
 
 const prisma = new PrismaClient();
@@ -7,24 +7,21 @@ const prisma = new PrismaClient();
 export const getProfiles = async (req: AuthRequest, res: Response) => {
   try {
     const { gender, location, preference, minAge, maxAge } = req.query;
-    const whereClause: any = { isActive: true }; // Only approved profiles
+    const whereClause: any = { isActive: true };
 
     if (gender) whereClause.user = { gender: (gender as string).toUpperCase() as Gender };
     if (location) whereClause.location = { contains: location as string, mode: 'insensitive' };
     if (preference) whereClause.relationshipPreference = (preference as string).toUpperCase();
 
-    // Age calculation
     if (minAge || maxAge) {
       const now = new Date();
       const minDate = minAge ? new Date(now.getFullYear() - Number(minAge), now.getMonth(), now.getDate()) : undefined;
       const maxDate = maxAge ? new Date(now.getFullYear() - Number(maxAge) - 1, now.getMonth(), now.getDate()) : undefined;
-
       whereClause.dateOfBirth = {};
       if (minDate) whereClause.dateOfBirth.lte = minDate;
       if (maxDate) whereClause.dateOfBirth.gte = maxDate;
     }
 
-    // Don't show current user's profile
     if (req.user) {
       whereClause.userId = { not: req.user.id };
     }
@@ -33,28 +30,37 @@ export const getProfiles = async (req: AuthRequest, res: Response) => {
       where: whereClause,
       include: {
         user: {
-          select: { id: true, email: true, gender: true, paymentStatus: true },
+          select: { id: true, email: true, phone: true, gender: true, paymentStatus: true },
         },
       },
       orderBy: { createdAt: 'desc' },
     });
 
-    // Strip private info from the list
     const sanitizedProfiles = profiles.map((p) => {
-      const isViewerPaidMale = req.user?.gender === 'MALE' && req.user?.paymentStatus === 'PAID';
+      const isOwner = req.user?.id === p.userId;
+      const isAdmin = req.user?.role === 'ADMIN';
+      const isViewerPaid = req.user?.paymentStatus === 'PAID';
       const isViewerFemale = req.user?.gender === 'FEMALE';
-      const isTargetFemale = p.user.gender === 'FEMALE';
       const isTargetMale = p.user.gender === 'MALE';
 
       const shouldUnlock =
-        (isViewerPaidMale && isTargetFemale) || // male paid → female profile
-        (isViewerFemale && isTargetMale);        // female → male profile (free)
+        isOwner ||
+        isAdmin ||
+        isViewerPaid ||
+        (isViewerFemale && isTargetMale);
 
       return {
         ...p,
-        telegramUsername: shouldUnlock ? p.telegramUsername : null,
+        telegramUsername:  shouldUnlock ? p.telegramUsername  : null,
         instagramUsername: shouldUnlock ? p.instagramUsername : null,
-        user: { ...p.user, email: shouldUnlock ? p.user.email : null },
+        facebookUsername:  shouldUnlock ? p.facebookUsername  : null,
+        whatsappNumber:    shouldUnlock ? p.whatsappNumber    : null,
+        tiktokUsername:    shouldUnlock ? p.tiktokUsername    : null,
+        user: {
+          ...p.user,
+          email: shouldUnlock ? p.user.email : null,
+          phone: shouldUnlock ? p.user.phone : null,
+        },
       };
     });
 
@@ -79,20 +85,16 @@ export const getProfileById = async (req: AuthRequest, res: Response) => {
     if (!profile) return res.status(404).json({ error: 'Profile not found' });
 
     const isOwner = req.user?.id === profile.userId;
-    const isTargetFemale = profile.user.gender === 'FEMALE';
-    const isTargetMale = profile.user.gender === 'MALE';
+    const isAdmin = req.user?.role === 'ADMIN';
+    const isViewerPaid = req.user?.paymentStatus === 'PAID';
     const isViewerFemale = req.user?.gender === 'FEMALE';
-    const isViewerPaidMale = req.user?.gender === 'MALE' && req.user?.paymentStatus === 'PAID';
+    const isTargetMale = profile.user.gender === 'MALE';
 
-    // Rules:
-    //  - Female viewer → male profile: always free
-    //  - Male viewer → female profile: requires 200 ETB payment
-    //  - Owner / Admin: always unlocked
     const isUnlocked =
       isOwner ||
-      req.user?.role === 'ADMIN' ||
-      (isViewerFemale && isTargetMale) ||
-      (isViewerPaidMale && isTargetFemale);
+      isAdmin ||
+      isViewerPaid ||
+      (isViewerFemale && isTargetMale);
 
     // Record view connection
     if (req.user && !isOwner) {
@@ -113,15 +115,17 @@ export const getProfileById = async (req: AuthRequest, res: Response) => {
 
     const sanitized = {
       ...profile,
-      telegramUsername: isUnlocked ? profile.telegramUsername : null,
+      telegramUsername:  isUnlocked ? profile.telegramUsername  : null,
       instagramUsername: isUnlocked ? profile.instagramUsername : null,
+      facebookUsername:  isUnlocked ? profile.facebookUsername  : null,
+      whatsappNumber:    isUnlocked ? profile.whatsappNumber    : null,
+      tiktokUsername:    isUnlocked ? profile.tiktokUsername    : null,
       user: {
         ...profile.user,
         email: isUnlocked ? profile.user.email : null,
         phone: isUnlocked ? profile.user.phone : null,
       },
-      // isLocked = male viewer hasn't paid to see female contacts
-      isLocked: !isUnlocked && isTargetFemale && req.user?.gender === 'MALE',
+      isLocked: !isUnlocked,
     };
 
     res.json(sanitized);
@@ -133,13 +137,25 @@ export const getProfileById = async (req: AuthRequest, res: Response) => {
 export const updateProfile = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { fullName, bio, location, city, profilePhotoUrl, relationshipPreference, telegramUsername, instagramUsername } = req.body;
+    const {
+      fullName, bio, location, city, profilePhotoUrl,
+      relationshipPreference, telegramUsername, instagramUsername,
+      facebookUsername, whatsappNumber, tiktokUsername, dateOfBirth,
+    } = req.body;
 
     const profile = await prisma.profile.findUnique({ where: { id } });
     if (!profile) return res.status(404).json({ error: 'Profile not found' });
 
     if (profile.userId !== req.user?.id && req.user?.role !== 'ADMIN') {
       return res.status(403).json({ error: 'Unauthorized profile update' });
+    }
+
+    // Also update phone on User if provided
+    if (req.body.phone !== undefined) {
+      await prisma.user.update({
+        where: { id: profile.userId },
+        data: { phone: req.body.phone || null },
+      });
     }
 
     const updatedProfile = await prisma.profile.update({
@@ -153,8 +169,10 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
         relationshipPreference,
         telegramUsername,
         instagramUsername,
-        // If profile details change, do we require re-approval? Let's keep existing status to be friendly but can reset:
-        // isActive: req.user?.role === 'ADMIN' ? undefined : false,
+        facebookUsername,
+        whatsappNumber,
+        tiktokUsername,
+        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
       },
     });
 

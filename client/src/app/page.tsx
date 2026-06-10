@@ -5,33 +5,35 @@ import Link from 'next/link';
 import {
   Users, Heart, ShieldCheck, CreditCard, Search, MessageCircle,
   ChevronLeft, ChevronRight, MapPin, Zap, UserCheck, Clock,
-  Send, Instagram
+  Send,
+  HeartIcon,
+  Flame
 } from 'lucide-react';
 import API from '../lib/api';
 
-/* ─── Data ─────────────────────────────────────────────────────── */
+/* === Data === */
 
 const STATS = [
-  { icon: Users,      value: '50K+',  label: 'Active Members' },
-  { icon: Heart,      value: '12K+',  label: 'Success Stories' },
+  { icon: Users, value: '50K+', label: 'Active Members' },
+  { icon: Heart, value: '12K+', label: 'Success Stories' },
   { icon: ShieldCheck, value: '100%', label: 'Safe & Secure' },
 ];
 
 const INTENTS = [
   {
-    icon: '❤️',
+    icon: HeartIcon,
     label: 'True Relationship',
     desc: 'Find your life partner',
     id: 'RELATIONSHIP',
   },
   {
-    icon: '👫',
+    icon: Users,
     label: 'Friendship',
     desc: 'Meet new friends',
     id: 'FRIENDSHIP',
   },
   {
-    icon: '🔥',
+    icon: Flame,
     label: 'Friends with Benefits',
     desc: 'No strings attached',
     id: 'FWB',
@@ -82,38 +84,38 @@ const WOMEN_FEATURES = [
 ];
 
 const WHY_US = [
-  { icon: ShieldCheck, title: 'Safe & Secure',  desc: 'Your privacy is our priority' },
-  { icon: UserCheck,   title: 'Real People',    desc: 'Verified profiles for real connections' },
-  { icon: Zap,         title: 'Fast & Easy',    desc: 'Quick registration and simple process' },
-  { icon: Clock,       title: '24/7 Support',   desc: 'We are here to help you anytime' },
+  { icon: ShieldCheck, title: 'Safe & Secure', desc: 'Your privacy is our priority' },
+  { icon: UserCheck, title: 'Real People', desc: 'Verified profiles for real connections' },
+  { icon: Zap, title: 'Fast & Easy', desc: 'Quick registration and simple process' },
+  { icon: Clock, title: '24/7 Support', desc: 'We are here to help you anytime' },
 ];
 
 const FEATURED = [
-  { name: 'Selam',  age: 24, intent: 'True Relationship', city: 'Addis Ababa', img: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=300&h=380&fit=crop&crop=face' },
-  { name: 'Daniel', age: 27, intent: 'Friendship',         city: 'Addis Ababa', img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=380&fit=crop&crop=face' },
-  { name: 'Maya',   age: 22, intent: 'Looking for Fun',    city: 'Addis Ababa', img: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=300&h=380&fit=crop&crop=face&sat=-100&con=1' },
-  { name: 'Abel',   age: 29, intent: 'True Relationship',  city: 'Addis Ababa', img: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&h=380&fit=crop&crop=face' },
-  { name: 'Lili',   age: 25, intent: 'Friendship',         city: 'Addis Ababa', img: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&h=380&fit=crop&crop=face' },
-  { name: 'Nahom',  age: 26, intent: 'Looking for Fun',    city: 'Addis Ababa', img: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=300&h=380&fit=crop&crop=face' },
+  { name: 'Selam', age: 24, intent: 'True Relationship', city: 'Addis Ababa', img: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=300&h=380&fit=crop&crop=face' },
+  { name: 'Daniel', age: 27, intent: 'Friendship', city: 'Addis Ababa', img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=380&fit=crop&crop=face' },
+  { name: 'Maya', age: 22, intent: 'Looking for Fun', city: 'Addis Ababa', img: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=300&h=380&fit=crop&crop=face&sat=-100&con=1' },
+  { name: 'Abel', age: 29, intent: 'True Relationship', city: 'Addis Ababa', img: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&h=380&fit=crop&crop=face' },
+  { name: 'Lili', age: 25, intent: 'Friendship', city: 'Addis Ababa', img: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&h=380&fit=crop&crop=face' },
+  { name: 'Nahom', age: 26, intent: 'Looking for Fun', city: 'Addis Ababa', img: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=300&h=380&fit=crop&crop=face' },
 ];
 
 const FOOTER_LINKS = {
   'Quick Links': ['Home', 'Search', 'How It Works', 'Success Stories', 'Blog'],
-  'Support':     ['FAQ', 'Contact Us', 'Terms of Service', 'Privacy Policy', 'Community Guidelines'],
+  'Support': ['FAQ', 'Contact Us', 'Terms of Service', 'Privacy Policy', 'Community Guidelines'],
 };
 
-/* ─── Component ─────────────────────────────────────────────────── */
+/* === Component === */
 
 export default function Home() {
-  const [fee, setFee]           = useState<number>(200);
-  const [email, setEmail]       = useState('');
+  const [fee, setFee] = useState<number>(200);
+  const [email, setEmail] = useState('');
   const [carouselIdx, setCarouselIdx] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     API.get('/settings').then((res) => {
       if (res.data?.membershipFee) setFee(res.data.membershipFee);
-    }).catch(() => {});
+    }).catch(() => { });
   }, []);
 
   const scrollCarousel = (dir: 'left' | 'right') => {
@@ -126,7 +128,7 @@ export default function Home() {
   return (
     <div className="flex flex-col w-full overflow-x-hidden">
 
-      {/* ══════════════ HERO ══════════════════════════════════════════ */}
+      {/* HERO */}
       <section className="relative w-full min-h-[580px] flex items-center overflow-hidden">
         {/* Background image */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -135,7 +137,7 @@ export default function Home() {
           alt="Couple"
           className="absolute inset-0 w-full h-full object-cover object-center"
         />
-        {/* Dark overlay - stronger on left, lighter on right */}
+        {/* Dark overlay */}
         <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/65 to-black/20" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/40" />
 
@@ -184,7 +186,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ══════════════ I'M HERE FOR ══════════════════════════════════ */}
+      {/* I'M HERE FOR */}
       <section className="w-full bg-[#12121a] border-y border-white/10 py-12">
         <div className="max-w-5xl mx-auto px-6">
           <h2 className="text-center text-white font-semibold text-base mb-7 tracking-wide">
@@ -196,8 +198,8 @@ export default function Home() {
                 key={intent.id}
                 className="flex items-center gap-4 p-5 rounded-2xl border border-white/10 bg-white/5 hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group"
               >
-                <div className="h-12 w-12 flex items-center justify-center rounded-full bg-primary/10 border border-primary/20 text-2xl shrink-0 group-hover:scale-110 transition-transform">
-                  {intent.icon}
+                <div className="h-12 w-12 text-primary flex items-center justify-center rounded-full  bg-[#12121a] border border-primary/20 text-2xl shrink-0 group-hover:scale-110 transition-transform">
+                  {<intent.icon />}
                 </div>
                 <div>
                   <p className="text-white font-bold text-sm">{intent.label}</p>
@@ -209,7 +211,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ══════════════ HOW IT WORKS ══════════════════════════════════ */}
+      {/* HOW IT WORKS */}
       <section id="how-it-works" className="w-full bg-white py-16">
         <div className="max-w-5xl mx-auto px-6">
           <div className="text-center mb-12">
@@ -241,11 +243,8 @@ export default function Home() {
             ))}
           </div>
         </div>
-      </section>
 
-      {/* ══════════════ JOIN WHAATACHI PRICING ════════════════════════ */}
-      <section className="w-full bg-[#0f0f1a] py-16">
-        <div className="max-w-5xl mx-auto px-6">
+        <div className="w-full bg-[#0f0f1a] p-6 mt-6 rounded-2xl max-w-5xl mx-auto px-6">
           <h2 className="text-2xl font-bold text-white text-center mb-10">Join Whaatachi</h2>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -253,8 +252,8 @@ export default function Home() {
             {/* Men Card */}
             <div className="lg:col-span-1 rounded-2xl border border-white/10 bg-[#1a1a2e] p-7 flex flex-col">
               <div className="flex items-center gap-4 mb-6">
-                <div className="h-14 w-14 flex items-center justify-center rounded-full bg-blue-500/20 border border-blue-500/30">
-                  <span className="text-blue-400 text-2xl font-bold">♂</span>
+                <div className="h-14 w-14 flex items-center justify-center rounded-full bg-blue-500 border border-blue-500/30">
+                  <span className="text-white text-6xl font-bold">♂</span>
                 </div>
                 <div>
                   <p className="text-gray-400 text-sm">Men</p>
@@ -280,8 +279,8 @@ export default function Home() {
             {/* Women Card */}
             <div className="lg:col-span-1 rounded-2xl border border-primary/30 bg-[#1a1a2e] p-7 flex flex-col">
               <div className="flex items-center gap-4 mb-6">
-                <div className="h-14 w-14 flex items-center justify-center rounded-full bg-primary/20 border border-primary/30">
-                  <span className="text-primary text-2xl font-bold">♀</span>
+                <div className="h-14 w-14 flex items-center justify-center rounded-full bg-primary border border-primary/30">
+                  <span className="text-white text-6xl font-bold">♀</span>
                 </div>
                 <div>
                   <p className="text-gray-400 text-sm">Women</p>
@@ -322,7 +321,86 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ══════════════ FEATURED MEMBERS ══════════════════════════════ */}
+      {/* JOIN WHAATACHI PRICING */}
+      {/* <section className="w-full bg-[#0f0f1a] py-16">
+        <div className="max-w-5xl mx-auto px-6">
+          <h2 className="text-2xl font-bold text-white text-center mb-10">Join Whaatachi</h2>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            Men Card
+            <div className="lg:col-span-1 rounded-2xl border border-white/10 bg-[#1a1a2e] p-7 flex flex-col">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="h-14 w-14 flex items-center justify-center rounded-full bg-blue-500/20 border border-blue-500/30">
+                  <span className="text-blue-400 text-2xl font-bold">♂</span>
+                </div>
+                <div>
+                  <p className="text-gray-400 text-sm">Men</p>
+                  <p className="text-white text-3xl font-extrabold">{fee} <span className="text-lg font-semibold text-gray-400">Birr</span></p>
+                </div>
+              </div>
+              <ul className="space-y-2.5 flex-1 mb-6">
+                {MEN_FEATURES.map((f) => (
+                  <li key={f} className="flex items-center gap-2 text-sm text-gray-300">
+                    <span className="text-primary text-base">✓</span>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/register"
+                className="block w-full text-center py-3.5 rounded-xl bg-blue-500 font-bold text-white text-sm hover:bg-blue-400 transition-all shadow"
+              >
+                Pay {fee} Birr & Continue
+              </Link>
+            </div>
+
+            Women Card
+            <div className="lg:col-span-1 rounded-2xl border border-primary/30 bg-[#1a1a2e] p-7 flex flex-col">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="h-14 w-14 flex items-center justify-center rounded-full bg-primary/20 border border-primary/30">
+                  <span className="text-primary text-2xl font-bold">♀</span>
+                </div>
+                <div>
+                  <p className="text-gray-400 text-sm">Women</p>
+                  <p className="text-white text-3xl font-extrabold text-primary">Free</p>
+                </div>
+              </div>
+              <ul className="space-y-2.5 flex-1 mb-6">
+                {WOMEN_FEATURES.map((f) => (
+                  <li key={f} className="flex items-center gap-2 text-sm text-gray-300">
+                    <span className="text-primary text-base">✓</span>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/register"
+                className="block w-full text-center py-3.5 rounded-xl bg-primary font-bold text-white text-sm hover:bg-primary/90 transition-all shadow shadow-primary/30"
+              >
+                Join For Free
+              </Link>
+            </div>
+
+            Why Us
+            <div className="lg:col-span-1 rounded-2xl border border-white/10 bg-[#1a1a2e] p-7 flex flex-col gap-5">
+              {WHY_US.map((w) => (
+                <div key={w.title} className="flex items-start gap-3">
+                  <div className="h-9 w-9 flex items-center justify-center rounded-full bg-primary/10 border border-primary/20 shrink-0">
+                    <w.icon className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-white font-semibold text-sm">{w.title}</p>
+                    <p className="text-gray-400 text-xs mt-0.5">{w.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section> */}
+
+      {/* FEATURED MEMBERS */}
       <section id="success-stories" className="w-full bg-[#12121a] py-14">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex items-center justify-between mb-8">
@@ -392,7 +470,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ══════════════ FOOTER ════════════════════════════════════════ */}
+      {/* FOOTER */}
       <footer className="w-full bg-[#0a0a12] border-t border-white/10 pt-14 pb-8">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-10 mb-12">
@@ -408,21 +486,38 @@ export default function Home() {
               </p>
               {/* Social Icons */}
               <div className="flex gap-3">
-                {[
-                  { label: 'Telegram',  href: '#', icon: Send,      bg: 'bg-blue-500' },
-                  { label: 'Instagram', href: '#', icon: Instagram,  bg: 'bg-gradient-to-br from-purple-600 to-pink-500' },
-                  { label: 'Facebook',  href: '#', icon: Users,      bg: 'bg-blue-600' },
-                  { label: 'Twitter',   href: '#', icon: MessageCircle, bg: 'bg-sky-500' },
-                ].map((s) => (
-                  <a
-                    key={s.label}
-                    href={s.href}
-                    aria-label={s.label}
-                    className={`h-8 w-8 flex items-center justify-center rounded-full ${s.bg} text-white hover:opacity-80 transition-opacity`}
-                  >
-                    <s.icon className="h-4 w-4" />
-                  </a>
-                ))}
+                <a
+                  href="#"
+                  aria-label="Telegram"
+                  className="h-8 w-8 flex items-center justify-center rounded-full bg-blue-500 text-white hover:opacity-80 transition-opacity"
+                >
+                  <Send className="h-4 w-4" />
+                </a>
+                <a
+                  href="#"
+                  aria-label="Instagram"
+                  className="h-8 w-8 flex items-center justify-center rounded-full bg-gradient-to-br from-purple-600 to-pink-500 text-white hover:opacity-80 transition-opacity"
+                >
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+                    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+                  </svg>
+                </a>
+                <a
+                  href="#"
+                  aria-label="Facebook"
+                  className="h-8 w-8 flex items-center justify-center rounded-full bg-blue-600 text-white hover:opacity-80 transition-opacity"
+                >
+                  <Users className="h-4 w-4" />
+                </a>
+                <a
+                  href="#"
+                  aria-label="Twitter"
+                  className="h-8 w-8 flex items-center justify-center rounded-full bg-sky-500 text-white hover:opacity-80 transition-opacity"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                </a>
               </div>
             </div>
 

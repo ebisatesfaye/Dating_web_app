@@ -138,8 +138,7 @@ function BrowseFeed() {
               const age = p.dateOfBirth
                 ? new Date().getFullYear() - new Date(p.dateOfBirth).getFullYear()
                 : null;
-              const isFemale = p.user?.gender === 'FEMALE';
-              const contactsVisible = p.telegramUsername || p.user?.phone;
+              const contactsVisible = !!(p.telegramUsername || p.user?.email);
 
               return (
                 <div key={p.id} className="group rounded-2xl overflow-hidden border border-white/10 bg-dark-surface hover:border-primary/40 transition-all shadow-lg flex flex-col">
@@ -180,12 +179,12 @@ function BrowseFeed() {
                     <Link
                       href={`/profile/${p.id}`}
                       className={`block w-full text-center rounded-xl py-2.5 text-sm font-bold transition-all ${
-                        isFemale && !contactsVisible
+                        !contactsVisible
                           ? 'bg-gradient-to-r from-primary to-secondary text-white hover:opacity-90 shadow-md'
                           : 'bg-white/5 border border-white/10 text-gray-200 hover:bg-primary hover:border-primary hover:text-white'
                       }`}
                     >
-                      {isFemale && !contactsVisible ? `🔒 View Contact (${fee} ETB)` : '📞 View Contact'}
+                      {!contactsVisible ? `🔒 View Contact (${fee} ETB)` : '📞 View Contact'}
                     </Link>
                   </div>
                 </div>

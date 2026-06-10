@@ -37,14 +37,27 @@ export const register = async (req: AuthRequest, res: Response) => {
       relationshipPreference,
       telegramUsername,
       instagramUsername,
+      facebookUsername,
+      whatsappNumber,
+      tiktokUsername,
     } = req.body;
 
-    if (!email || !phone || !password || !gender || !fullName || !dateOfBirth || !location || !relationshipPreference) {
-      return res.status(400).json({ error: 'Missing required fields' });
+    if (!email || !password || !gender || !fullName || !location || !relationshipPreference) {
+      return res.status(400).json({ error: 'Missing required fields: fullName, email, password, gender, location, relationshipPreference' });
+    }
+
+    // At least one contact method is required
+    if (!phone && !telegramUsername && !instagramUsername) {
+      return res.status(400).json({ error: 'At least one contact method is required: phone number, Telegram username, or Instagram username.' });
     }
 
     const existingUser = await prisma.user.findFirst({
-      where: { OR: [{ email }, { phone }] },
+      where: {
+        OR: [
+          { email },
+          ...(phone ? [{ phone }] : []),
+        ],
+      },
     });
     if (existingUser) {
       return res.status(400).json({ error: 'User with this email or phone already exists' });
@@ -53,28 +66,30 @@ export const register = async (req: AuthRequest, res: Response) => {
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
-    // Default payment status: female is FREE, male/other is PENDING
     const paymentStatus = gender.toUpperCase() === 'FEMALE' ? PaymentStatus.FREE : PaymentStatus.PENDING;
 
     const user = await prisma.user.create({
       data: {
         email,
-        phone,
+        phone: phone || null,
         passwordHash,
         gender: gender.toUpperCase(),
         paymentStatus,
         profile: {
           create: {
             fullName,
-            dateOfBirth: new Date(dateOfBirth),
+            dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
             location,
             city,
             bio,
-            profilePhotoUrl: profilePhotoUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=500',
+            profilePhotoUrl: profilePhotoUrl || null,
             relationshipPreference: relationshipPreference.toUpperCase(),
-            telegramUsername,
-            instagramUsername,
-            isActive: false, // requires admin approval
+            telegramUsername: telegramUsername || null,
+            instagramUsername: instagramUsername || null,
+            facebookUsername: facebookUsername || null,
+            whatsappNumber: whatsappNumber || null,
+            tiktokUsername: tiktokUsername || null,
+            isActive: false,
           },
         },
       },

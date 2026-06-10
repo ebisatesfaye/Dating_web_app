@@ -52,7 +52,7 @@ enum ReportStatus {
 model User {
   id             String        @id @default(uuid())
   email          String        @unique
-  phone          String        @unique
+  phone          String?       @unique
   passwordHash   String
   gender         Gender
   role           Role          @default(MEMBER)
@@ -82,7 +82,7 @@ model Profile {
   userId                 String                 @unique
   user                   User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
   fullName               String
-  dateOfBirth            DateTime
+  dateOfBirth            DateTime?
   location               String
   city                   String?
   bio                    String?
@@ -90,6 +90,9 @@ model Profile {
   relationshipPreference RelationshipPreference
   instagramUsername      String?
   telegramUsername       String?
+  facebookUsername       String?
+  whatsappNumber         String?
+  tiktokUsername         String?
   isPrivateInfoVisible   Boolean                @default(false)
   isActive               Boolean                @default(false) // Needs admin approval by default
   createdAt              DateTime               @default(now())
